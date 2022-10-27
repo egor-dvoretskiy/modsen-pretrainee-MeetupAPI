@@ -9,11 +9,13 @@ using MeetupAPI.Data;
 using MeetupAPI.Models;
 using AutoMapper;
 using MeetupAPI.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MeetupAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MeetupModelsController : ControllerBase
     {
         private readonly int _maxBudgetRandomValue = 99999;
