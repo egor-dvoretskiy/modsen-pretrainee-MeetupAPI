@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MeetupAPI.Data;
 using MeetupAPI.Models;
+using AutoMapper;
+using MeetupAPI.DTOs;
 
 namespace MeetupAPI.Controllers
 {
@@ -14,45 +16,101 @@ namespace MeetupAPI.Controllers
     [ApiController]
     public class MeetupModelsController : ControllerBase
     {
-        private readonly MeetupAPIDbContext _context;
+        private readonly int _maxBudgetRandomValue = 99999;
 
-        public MeetupModelsController(MeetupAPIDbContext context)
+        private readonly MeetupAPIDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly Random _random;
+
+        public MeetupModelsController(MeetupAPIDbContext context, IMapper mapper)
         {
-            _context = context;
+            this._context = context;
+            this._mapper = mapper;
+
+            this._random = new Random();
         }
 
         // GET: api/MeetupModels
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MeetupModel>>> GetMeetupModels()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IEnumerable<MeetupDTO>> GetMeetupModels()
         {
-            return await _context.MeetupModels.ToListAsync();
+            var meetupModels = await _context.MeetupModels
+                .Include(x => x.Speakers)
+                .ToListAsync();
+
+            IEnumerable<MeetupDTO> meetupDTOs = meetupModels.Select(x => this._mapper.Map<MeetupDTO>(x));
+
+            return meetupDTOs;
         }
 
         // GET: api/MeetupModels/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<MeetupModel>> GetMeetupModel(int id)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<MeetupDTO>> GetMeetupModel(int id)
         {
-            var meetupModel = await _context.MeetupModels.FindAsync(id);
+            if (!this.MeetupModelExists(id))
+            {
+                return BadRequest();
+            }
+
+            var meetupModel = await _context.MeetupModels
+                .Where(x => x.Id == id)
+                .Include(x => x.Speakers)
+                .SingleOrDefaultAsync();
 
             if (meetupModel == null)
             {
                 return NotFound();
             }
 
-            return meetupModel;
+            var meetupDTO = this._mapper.Map<MeetupDTO>(meetupModel);
+            if (meetupDTO == null)
+            {
+                return NotFound();
+            }
+
+            return meetupDTO;
         }
 
         // PUT: api/MeetupModels/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMeetupModel(int id, MeetupModel meetupModel)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> PutMeetupModel(int id, MeetupDTO meetupDTO)
         {
-            if (id != meetupModel.Id)
+            if (!this.MeetupModelExists(id))
             {
                 return BadRequest();
             }
 
-            _context.Entry(meetupModel).State = EntityState.Modified;
+            //temporary decision -> problem with replacing nested list.
+            var meetupModelDB = await _context.MeetupModels
+                .Where(x => x.Id == id)
+                .Include(x => x.Speakers)
+                .SingleOrDefaultAsync();
+            if (meetupModelDB == null)
+            {
+                return NotFound();
+            }
+            _context.MeetupModels.Remove(meetupModelDB);
+            //
+
+            var meetupModel = this._mapper.Map<MeetupModel>(meetupDTO);
+            if (meetupModel == null)
+            {
+                return NotFound();
+            }
+
+            meetupModel.Id = id;
+            meetupModel.Budget = this._random.Next(0, this._maxBudgetRandomValue);
+
+            /*_context.Entry(meetupModelDB).CurrentValues.SetValues(meetupModel);  */
+            _context.MeetupModels.Add(meetupModel);
 
             try
             {
@@ -60,7 +118,7 @@ namespace MeetupAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!MeetupModelExists(id))
+                if (!this.MeetupModelExists(id))
                 {
                     return NotFound();
                 }
@@ -76,19 +134,28 @@ namespace MeetupAPI.Controllers
         // POST: api/MeetupModels
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<MeetupModel>> PostMeetupModel(MeetupModel meetupModel)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public async Task<ActionResult<MeetupDTO>> PostMeetupModel(MeetupDTO meetup)
         {
+            var meetupModel = this._mapper.Map<MeetupModel>(meetup);
+            meetupModel.Budget = this._random.Next(0, this._maxBudgetRandomValue);
+
             _context.MeetupModels.Add(meetupModel);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetMeetupModel", new { id = meetupModel.Id }, meetupModel);
+            return CreatedAtAction("GetMeetupModel", new { id = meetupModel.Id }, meetup);
         }
 
         // DELETE: api/MeetupModels/5
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteMeetupModel(int id)
         {
-            var meetupModel = await _context.MeetupModels.FindAsync(id);
+            var meetupModel = await _context.MeetupModels
+                .Where(x => x.Id == id)
+                .Include(x => x.Speakers)
+                .SingleOrDefaultAsync();
             if (meetupModel == null)
             {
                 return NotFound();

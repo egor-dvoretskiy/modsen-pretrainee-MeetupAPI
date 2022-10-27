@@ -13,9 +13,25 @@ namespace MeetupAPI.Data
         public MeetupAPIDbContext(DbContextOptions<MeetupAPIDbContext> options)
             : base(options)
         {
-
+            _ = Database.EnsureCreated();
         }
 
         public DbSet<MeetupModel> MeetupModels { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<MeetupModel>()
+                .HasMany(x => x.Speakers)
+                .WithOne(x => x.MeetupModel)
+                .HasForeignKey(x => x.MeetupModelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MeetupModel>()
+                .Property(x => x.Budget)
+                .HasPrecision(10, 2);
+
+            modelBuilder.Entity<MeetupModel>()
+                .HasKey(x => x.Id);
+        }
     }
 }

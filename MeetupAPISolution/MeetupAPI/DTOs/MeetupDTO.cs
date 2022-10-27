@@ -1,17 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MeetupAPI.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MeetupAPI.Models
+namespace MeetupAPI.DTOs
 {
-    public class MeetupModel
+    public class MeetupDTO
     {
-        public int Id { get; set; }
-
         public string Topic { get; set; }
 
         public string Description { get; set; }
@@ -20,12 +17,10 @@ namespace MeetupAPI.Models
 
         public string Sponsor { get; set; }
 
-        public List<SpeakerModel> Speakers { get; set; }
+        public List<SpeakerDTO> Speakers { get; set; }
 
         public DateTime EventDateTime { get; set; }
 
         public string EventLocation { get; set; }
-
-        public decimal Budget { get; set; }
     }
 }
