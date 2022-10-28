@@ -7,6 +7,8 @@ using MeetupAPI.Data;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MeetupAPI.Data.Repositories.Interfaces;
+using MeetupAPI.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,6 +82,8 @@ builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("UserContext")));
 
 #endregion
+
+builder.Services.AddScoped<IMeetupRepository, MeetupRepository>();
 
 var app = builder.Build();
 

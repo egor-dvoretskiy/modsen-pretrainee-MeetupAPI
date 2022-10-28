@@ -10,6 +10,7 @@ using MeetupAPI.Models;
 using AutoMapper;
 using MeetupAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using MeetupAPI.Data.Repositories.Interfaces;
 
 namespace MeetupAPI.Controllers
 {
@@ -20,13 +21,13 @@ namespace MeetupAPI.Controllers
     {
         private readonly int _maxBudgetRandomValue = 99999;
 
-        private readonly MeetupAPIDbContext _context;
+        private readonly IMeetupRepository _repository;
         private readonly IMapper _mapper;
         private readonly Random _random;
 
-        public MeetupModelsController(MeetupAPIDbContext context, IMapper mapper)
+        public MeetupModelsController(IMapper mapper, IMeetupRepository repository)
         {
-            this._context = context;
+            this._repository = repository;
             this._mapper = mapper;
 
             this._random = new Random();
@@ -37,9 +38,7 @@ namespace MeetupAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IEnumerable<MeetupDTO>> GetMeetupModels()
         {
-            var meetupModels = await _context.MeetupModels
-                .Include(x => x.Speakers)
-                .ToListAsync();
+            var meetupModels = await this._repository.GetAll();
 
             IEnumerable<MeetupDTO> meetupDTOs = meetupModels.Select(x => this._mapper.Map<MeetupDTO>(x));
 
@@ -53,16 +52,12 @@ namespace MeetupAPI.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MeetupDTO>> GetMeetupModel(int id)
         {
-            if (!this.MeetupModelExists(id))
+            if (!await this._repository.IsExist(id))
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            var meetupModel = await _context.MeetupModels
-                .Where(x => x.Id == id)
-                .Include(x => x.Speakers)
-                .SingleOrDefaultAsync();
-
+            var meetupModel = await this._repository.GetById(id);
             if (meetupModel == null)
             {
                 return NotFound();
@@ -85,22 +80,10 @@ namespace MeetupAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PutMeetupModel(int id, MeetupDTO meetupDTO)
         {
-            if (!this.MeetupModelExists(id))
-            {
-                return BadRequest();
-            }
-
-            //temporary decision -> problem with replacing nested list.
-            var meetupModelDB = await _context.MeetupModels
-                .Where(x => x.Id == id)
-                .Include(x => x.Speakers)
-                .SingleOrDefaultAsync();
-            if (meetupModelDB == null)
+            if (!await this._repository.IsExist(id))
             {
                 return NotFound();
             }
-            _context.MeetupModels.Remove(meetupModelDB);
-            //
 
             var meetupModel = this._mapper.Map<MeetupModel>(meetupDTO);
             if (meetupModel == null)
@@ -111,23 +94,9 @@ namespace MeetupAPI.Controllers
             meetupModel.Id = id;
             meetupModel.Budget = this._random.Next(0, this._maxBudgetRandomValue);
 
-            /*_context.Entry(meetupModelDB).CurrentValues.SetValues(meetupModel);  */
-            _context.MeetupModels.Add(meetupModel);
-
-            try
+            if (!await this._repository.Update(meetupModel))
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!this.MeetupModelExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest();
             }
 
             return NoContent();
@@ -142,8 +111,7 @@ namespace MeetupAPI.Controllers
             var meetupModel = this._mapper.Map<MeetupModel>(meetup);
             meetupModel.Budget = this._random.Next(0, this._maxBudgetRandomValue);
 
-            _context.MeetupModels.Add(meetupModel);
-            await _context.SaveChangesAsync();
+            await this._repository.Add(meetupModel);
 
             return CreatedAtAction("GetMeetupModel", new { id = meetupModel.Id }, meetup);
         }
@@ -154,24 +122,14 @@ namespace MeetupAPI.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteMeetupModel(int id)
         {
-            var meetupModel = await _context.MeetupModels
-                .Where(x => x.Id == id)
-                .Include(x => x.Speakers)
-                .SingleOrDefaultAsync();
-            if (meetupModel == null)
+            bool isDeleteSuccessful = await this._repository.DeleteById(id);
+
+            if (!isDeleteSuccessful)
             {
                 return NotFound();
             }
 
-            _context.MeetupModels.Remove(meetupModel);
-            await _context.SaveChangesAsync();
-
             return NoContent();
-        }
-
-        private bool MeetupModelExists(int id)
-        {
-            return _context.MeetupModels.Any(e => e.Id == id);
         }
     }
 }
