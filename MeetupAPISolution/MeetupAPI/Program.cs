@@ -85,6 +85,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 #endregion
 
 builder.Services.AddScoped<IMeetupRepository, MeetupRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 

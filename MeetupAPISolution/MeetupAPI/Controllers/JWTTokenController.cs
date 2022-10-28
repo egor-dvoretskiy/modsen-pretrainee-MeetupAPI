@@ -1,4 +1,7 @@
-﻿using MeetupAPI.Data;
+﻿using AutoMapper;
+using MeetupAPI.Data;
+using MeetupAPI.Data.Repositories.Interfaces;
+using MeetupAPI.DTOs.Account;
 using MeetupAPI.Models.Account;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,21 +19,25 @@ namespace MeetupAPI.Controllers
     public class JWTTokenController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        private readonly UserDbContext _userDbContext;
+        private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
-        public JWTTokenController(IConfiguration configuration, UserDbContext context)
+        public JWTTokenController(IConfiguration configuration, IMapper mapper, IUserRepository repository)
         {
             this._configuration = configuration;
-            this._userDbContext = context;
+            this._userRepository = repository;
+            this._mapper = mapper;
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Post(UserModel userModel)
+        public async Task<IActionResult> Post(UserDTO userDTO)
         {
-            if (userModel != null && !string.IsNullOrEmpty(userModel.Password) && !string.IsNullOrEmpty(userModel.UserName))
+            if (userDTO != null && !string.IsNullOrEmpty(userDTO.Password) && !string.IsNullOrEmpty(userDTO.UserName))
             {
-                var userData = await GetUser(userModel.UserName, userModel.Password);
+                var userModel = (await this._userRepository.GetAll()).FirstOrDefault(u => u.UserName == userDTO.UserName && u.Password == userDTO.Password) ?? new UserModel();
+                
                 var jwt = this._configuration.GetSection("Jwt").Get<Jwt>();
 
                 var claims = new[]
@@ -61,9 +68,19 @@ namespace MeetupAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<UserModel> GetUser(string username, string password)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<UserDTO> GetUser(string username, string password)
         {
-            return await this._userDbContext.UserModels.FirstOrDefaultAsync(u => u.UserName == username && u.Password == password);
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                return new UserDTO();
+            }
+            
+            var userModel = (await this._userRepository.GetAll()).FirstOrDefault(u => u.UserName == username && u.Password == password);
+            var userDTO  = this._mapper.Map<UserDTO>(userModel);
+
+            return userDTO;
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MeetupAPI.Data.Repositories.Interfaces
 {
-    public interface IMeetupRepository<T>
+    public interface IBaseRepository<T>
     {
         public Task<IEnumerable<T>> GetAll();
 
