@@ -15,14 +15,12 @@ https://learn.microsoft.com/ru-ru/aspnet/core/tutorials/first-web-api?view=aspne
 And if you use Mozila Firefox this guide may help you:
 https://learn.microsoft.com/ru-ru/aspnet/core/security/enforcing-ssl?view=aspnetcore-6.0&tabs=visual-studio#trust-ff
 
-5. Inside the project MeetupAPI open appsettings.json and replace string 'Lancer\\ERGOSERVER' on your server's name from p.2.
+5. Now, you can run the project.
 
-6. Now, you can run the project.
+6. To obtain right to use various method you should authorize by post 'admin'-'admin' and copy the response.
 
-7. To obtain right to use various method you should authorize by post 'admin'-'admin' and copy the response.
+7. Click Green button authorize, enter word 'Bearer' with space and insert response token from p.6.
 
-8. Click Green button authorize, enter word 'Bearer' with space and insert response token from p.7.
+8. Now, all function available to use.
 
-9. Now, all function available to use.
-
-10. Have fun!
+9. Have fun!
