@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MeetupAPI.Data.Repositories.Interfaces;
 using MeetupAPI.Data.Repositories;
+using MeetupAPI.Data.InitialData;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,6 +87,15 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 builder.Services.AddScoped<IMeetupRepository, MeetupRepository>();
 
 var app = builder.Build();
+
+#region SeedData
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    SeedData.Seed(services);
+    SeedUsers.Seed(services);
+}
+#endregion
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
