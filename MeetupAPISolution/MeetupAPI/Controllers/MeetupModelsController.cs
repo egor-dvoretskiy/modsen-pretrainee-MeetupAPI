@@ -11,26 +11,24 @@ using AutoMapper;
 using MeetupAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using MeetupAPI.Data.Repositories.Interfaces;
+using FluentValidation;
+using FluentValidation.Results;
 
 namespace MeetupAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class MeetupModelsController : ControllerBase
     {
-        private readonly int _maxBudgetRandomValue = 99999;
-
         private readonly IMeetupRepository _repository;
+        private readonly IValidator<MeetupDTO> _validator;
         private readonly IMapper _mapper;
-        private readonly Random _random;
 
-        public MeetupModelsController(IMapper mapper, IMeetupRepository repository)
+        public MeetupModelsController(IMapper mapper, IMeetupRepository repository, IValidator<MeetupDTO> validator)
         {
             this._repository = repository;
             this._mapper = mapper;
-
-            this._random = new Random();
+            this._validator = validator;
         }
 
         // GET: api/MeetupModels
@@ -75,11 +73,16 @@ namespace MeetupAPI.Controllers
         // PUT: api/MeetupModels/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PutMeetupModel(int id, MeetupDTO meetupDTO)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(meetupDTO);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult);
+
             if (!await this._repository.IsExist(id))
             {
                 return NotFound();
@@ -92,7 +95,6 @@ namespace MeetupAPI.Controllers
             }
 
             meetupModel.Id = id;
-            meetupModel.Budget = this._random.Next(0, this._maxBudgetRandomValue);
 
             if (!await this._repository.Update(meetupModel))
             {
@@ -105,11 +107,15 @@ namespace MeetupAPI.Controllers
         // POST: api/MeetupModels
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status201Created)]
         public async Task<ActionResult<MeetupDTO>> PostMeetupModel(MeetupDTO meetup)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(meetup);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult);
+
             var meetupModel = this._mapper.Map<MeetupModel>(meetup);
-            meetupModel.Budget = this._random.Next(0, this._maxBudgetRandomValue);
 
             await this._repository.Add(meetupModel);
 
@@ -118,6 +124,7 @@ namespace MeetupAPI.Controllers
 
         // DELETE: api/MeetupModels/5
         [HttpDelete("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteMeetupModel(int id)

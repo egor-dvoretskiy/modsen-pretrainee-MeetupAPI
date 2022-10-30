@@ -80,7 +80,7 @@ namespace MeetupAPI.Data.InitialData
         {
             return new MeetupModel
             {
-                Budget = 66783.24m,
+                Budget = 8347723.24m,
                 Description = "Just a meeting among homeless",
                 EventDateTime = DateTime.Now.AddDays(16),
                 EventLocation = "Republic Palace",
@@ -117,7 +117,7 @@ namespace MeetupAPI.Data.InitialData
         {
             return new MeetupModel
             {
-                Budget = 66783.24m,
+                Budget = 9963.24m,
                 Description = "Meetup with famous tik tokers.",
                 EventDateTime = DateTime.Now.AddDays(16),
                 EventLocation = "Dana mall",
@@ -142,7 +142,7 @@ namespace MeetupAPI.Data.InitialData
         {
             return new MeetupModel
             {
-                Budget = 66783.24m,
+                Budget = 13732.55m,
                 Description = "There is no need to speak about it.",
                 EventDateTime = DateTime.Now.AddDays(16),
                 EventLocation = "Moscow-city",

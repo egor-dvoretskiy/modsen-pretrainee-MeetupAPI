@@ -10,12 +10,18 @@ using System.Text;
 using MeetupAPI.Data.Repositories.Interfaces;
 using MeetupAPI.Data.Repositories;
 using MeetupAPI.Data.InitialData;
+using FluentValidation.AspNetCore;
+using FluentValidation;
+using MeetupAPI.DTOs;
+using MeetupAPI.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddControllers().AddJsonOptions(options =>
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = null;
 });
@@ -86,6 +92,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 
 builder.Services.AddScoped<IMeetupRepository, MeetupRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IValidator<MeetupDTO>, PostOrPutMeetupValidator>();
 
 var app = builder.Build();
 
